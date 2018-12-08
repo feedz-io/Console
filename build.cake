@@ -5,6 +5,8 @@
 #tool "nuget:?package=ILRepack&version=2.0.13"
 #addin "nuget:?package=SharpCompress&version=0.12.4"
 #addin "nuget:?package=Cake.Npm&version=0.14.0"
+#addin nuget:?package=Feedz.Client
+#addin nuget:?package=Octodiff
 
 using SharpCompress;
 using SharpCompress.Common;
@@ -125,12 +127,23 @@ Task("Zip")
     .IsDependentOn("MergeExe")
     .Does(() => {
 
-        Zip($"{publishDir}/netfx-merged", $"{artifactsDir}/Feedz.Console.{nugetVersion}.zip");
-        TarGzip($"{publishDir}/linux",  $"{artifactsDir}/Feedz.Console.linux.{nugetVersion}.zip");
+        Zip(System.IO.Path.GetFullPath($"{publishDir}/netfx-merged"), $"{artifactsDir}/Feedz.Console.{nugetVersion}.zip");
+        TarGzip($"{publishDir}/linux",  $"{artifactsDir}/Feedz.Console.linux.{nugetVersion}");
     });
 
+Task("Push")
+    .IsDependentOn("Zip")
+   // .WithCriteria(BuildSystem.IsRunningOnAppVeyor)
+    .Does(async () => {
+        var repo = Feedz.Client.FeedzClient.Create(EnvironmentVariable("FeedzApiKey"))
+            .ScopeToRepository("feedz-io", "public");
+
+        await repo.Packages.Upload($"{artifactsDir}/Feedz.Console.{nugetVersion}.zip");
+        await repo.Packages.Upload($"{artifactsDir}/Feedz.Console.linux.{nugetVersion}.tar.gz");
+     });
+
 Task("Default")
-        .IsDependentOn("Zip");
+        .IsDependentOn("Push");
         
         
 private void TarGzip(string path, string outputFile)
