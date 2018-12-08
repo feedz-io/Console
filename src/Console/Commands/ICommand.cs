@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace Feedz.Console.Commands
 {
     public interface ICommand
     {
-        void Execute(string[] args);
+        Task Execute(string[] args);
     }
 
     [AttributeUsage(AttributeTargets.Class)]

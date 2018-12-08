@@ -2,7 +2,13 @@
 // TOOLS
 //////////////////////////////////////////////////////////////////////
 #tool "nuget:?package=GitVersion.CommandLine&version=4.0.0-beta0011"
+#tool "nuget:?package=ILRepack&version=2.0.13"
+#addin "nuget:?package=SharpCompress&version=0.12.4"
 #addin "nuget:?package=Cake.Npm&version=0.14.0"
+
+using SharpCompress;
+using SharpCompress.Common;
+using SharpCompress.Writer;
 
 //////////////////////////////////////////////////////////////////////
 // ARGUMENTS
@@ -14,6 +20,7 @@ var configuration = Argument("configuration", "Release");
 // GLOBAL VARIABLES
 ///////////////////////////////////////////////////////////////////////////////
 var artifactsDir = "./artifacts/";
+var publishDir = "./publish/";
 GitVersion gitVersionInfo;
 string nugetVersion;
 
@@ -32,7 +39,7 @@ Setup(context =>
     if(BuildSystem.IsRunningOnAppVeyor)
         BuildSystem.AppVeyor.UpdateBuildVersion(nugetVersion);
 
-    Information("Building Feedz.Client v{0}", nugetVersion);
+    Information("Building Feedz.Console v{0}", nugetVersion);
     Information("Informational Version {0}", gitVersionInfo.InformationalVersion);
 });
 
@@ -48,7 +55,8 @@ Teardown(context =>
 Task("Clean")
     .Does(() => {
 		CleanDirectory(artifactsDir);
-		CleanDirectory("./output");
+		CleanDirectory("./artifacts");
+		CleanDirectory("./publish");
 		CleanDirectories("./src/**/bin");
 		CleanDirectories("./src/**/obj");
 	});
@@ -70,39 +78,81 @@ Task("Build")
 		});
 	});
 
-Task("Pack")
+Task("Publish")
     .IsDependentOn("Build")
     .Does(() => {
-        DotNetCorePack("./src/Client", new DotNetCorePackSettings
+    
+        DotNetCorePublish("./src/Console", new DotNetCorePublishSettings
         {
             Configuration = configuration,
             NoBuild = true,
-            OutputDirectory = artifactsDir,
+            OutputDirectory = $"{publishDir}\\netfx",
+            Framework = "net461",
+            ArgumentCustomization = args => args.Append($"/p:Version={nugetVersion}")
+        });
+        
+        DotNetCorePublish("./src/Console", new DotNetCorePublishSettings
+        {
+            Configuration = configuration,
+            OutputDirectory = $"{publishDir}\\linux",
+            Framework = "netcoreapp2.1",
+            Runtime = "linux-x64",
             ArgumentCustomization = args => args.Append($"/p:Version={nugetVersion}")
         });
     });
+    
+Task("MergeExe")
+    .IsDependentOn("Publish")
+    .Does(() => {
+        var inputFolder = $"{publishDir}/netfx";
+        var outputFolder = $"{publishDir}/netfx-merged";
+        CreateDirectory(outputFolder);
+        
+        ILRepack(
+            $"{outputFolder}/Feedz.exe",
+            $"{inputFolder}/Feedz.exe",
+            System.IO.Directory.EnumerateFiles(inputFolder, "*.dll").Select(f => (FilePath) f),
+            new ILRepackSettings {
+                Internalize = true,
+                Parallel = true,
+                Libs = new List<DirectoryPath>() { inputFolder }
+            }
+        );
+    });
 
-Task("Publish")
-    .WithCriteria(BuildSystem.IsRunningOnAppVeyor)
-    .IsDependentOn("Pack")
-    .Does(() =>
-    {
-        NuGetPush($"{artifactsDir}Feedz.Client.{nugetVersion}.nupkg", new NuGetPushSettings {
-            Source = "https://f.feedz.io/feedz-io/public/nuget",
-            ApiKey = EnvironmentVariable("FeedzApiKey")
-        });
+    
+Task("Zip")
+    .IsDependentOn("MergeExe")
+    .Does(() => {
 
-        if (string.IsNullOrWhiteSpace(gitVersionInfo.PreReleaseLabel))
-        {
-            NuGetPush($"{artifactsDir}Feedz.Client.{nugetVersion}.nupkg", new NuGetPushSettings {
-                Source = "https://www.nuget.org/api/v2/package",
-                ApiKey = EnvironmentVariable("NuGetApiKey")
-            });
-        }
+        Zip($"{publishDir}/netfx-merged", $"{artifactsDir}/Feedz.Console.{nugetVersion}.zip");
+        TarGzip($"{publishDir}/linux",  $"{artifactsDir}/Feedz.Console.linux.{nugetVersion}.zip");
     });
 
 Task("Default")
-    .IsDependentOn("Publish");
+        .IsDependentOn("Zip");
+        
+        
+private void TarGzip(string path, string outputFile)
+{
+    var outFile = $"{outputFile}.tar.gz";
+    Information("Creating TGZ file {0} from {1}", outFile, path);
+    using (var tarMemStream = new MemoryStream())
+    {
+        using (var tar = WriterFactory.Open(tarMemStream, ArchiveType.Tar, CompressionType.None, true))
+        {
+            tar.WriteAll(path, "*", SearchOption.AllDirectories);
+        }
+
+        tarMemStream.Seek(0, SeekOrigin.Begin);
+
+        using (Stream stream = System.IO.File.Open(outFile, FileMode.Create))
+        using (var zip = WriterFactory.Open(stream, ArchiveType.GZip, CompressionType.GZip))
+            zip.Write($"{outputFile}.tar", tarMemStream);
+    }
+    Information("Successfully created TGZ file: {0}", outFile);
+}
+
 
 //////////////////////////////////////////////////////////////////////
 // EXECUTION

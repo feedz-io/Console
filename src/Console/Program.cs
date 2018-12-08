@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Feedz.Console.Commands;
 using Serilog;
 using Serilog.Exceptions;
@@ -9,7 +10,7 @@ namespace Feedz.Console
 {
     class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             Log.Logger = new LoggerConfiguration()
                 .Enrich.WithDemystifiedStackTraces()
@@ -37,7 +38,7 @@ namespace Feedz.Console
             if (command != null)
             {
                 var impl = (ICommand) Activator.CreateInstance(command.Type);
-                impl.Execute(args.Skip(1).ToArray());
+                await impl.Execute(args.Skip(1).ToArray());
                 return;
             }
 

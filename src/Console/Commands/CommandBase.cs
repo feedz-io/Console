@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using Feedz.Util.Extensions;
 using NDesk.Options;
-using Nito.AsyncEx;
 using Serilog;
 
 namespace Feedz.Console.Commands
@@ -11,7 +10,7 @@ namespace Feedz.Console.Commands
     {
         private bool _printHelp;
 
-        public void Execute(string[] args)
+        public async Task Execute(string[] args)
         {
             var options = new OptionSet();
             options.Add("help", () => "Show the options for this command", v => _printHelp = true);
@@ -38,9 +37,7 @@ namespace Feedz.Console.Commands
                 return;
             }
 
-            AsyncContext.Run(Execute);
-
-            return;
+            await Execute();
         }
 
         protected abstract void PopulateOptions(OptionSet options);
