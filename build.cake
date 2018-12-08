@@ -139,7 +139,7 @@ Task("Push")
             .ScopeToRepository("feedz-io", "public");
 
         await repo.Packages.Upload($"{artifactsDir}/Feedz.Console.{nugetVersion}.zip");
-        await repo.Packages.Upload($"{artifactsDir}/Feedz.Console.linux.{nugetVersion}.tar.gz");
+        await repo.Packages.Upload($"{artifactsDir}/Feedz.Console.linux.{nugetVersion}.tgz");
      });
 
 Task("Default")
@@ -148,7 +148,7 @@ Task("Default")
         
 private void TarGzip(string path, string outputFile)
 {
-    var outFile = $"{outputFile}.tar.gz";
+    var outFile = $"{outputFile}.tgz";
     Information("Creating TGZ file {0} from {1}", outFile, path);
     using (var tarMemStream = new MemoryStream())
     {
