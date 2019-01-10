@@ -13,9 +13,8 @@ namespace Feedz.Console
         static async Task Main(string[] args)
         {
             Log.Logger = new LoggerConfiguration()
-                .Enrich.WithDemystifiedStackTraces()
                 .Enrich.WithExceptionDetails()
-                .WriteTo.Console()
+                .WriteTo.Console(outputTemplate: "{Message:lk}{NewLine}{Exception}")
                 .MinimumLevel.Information()
                 .CreateLogger();
 

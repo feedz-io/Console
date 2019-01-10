@@ -24,12 +24,12 @@ namespace Feedz.Console.Commands
         {
             options.Add(
                 "organisation=|org=|o=",
-                () => "Organisation to push to",
+                () => "The slug of the organisation to push to",
                 v => _org = v
             );
             options.Add(
                 "repository=|repo=|r=",
-                () => "Repository to push to",
+                () => "The slug of the repository to push to",
                 v => _repo = v
             );
             options.Add(
