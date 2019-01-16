@@ -19,6 +19,7 @@ namespace Feedz.Console.Commands
         private string _pat;
         private string _region;
         private bool _force;
+        private int _timeout = 1800;
 
         protected override void PopulateOptions(OptionSet options)
         {
@@ -48,6 +49,11 @@ namespace Feedz.Console.Commands
                 v => _force = v != null
             );
             options.Add(
+                "timeout",
+                () => "(Optional) Amount of time wait for the push to complete in seconds (Default 1800)",
+                (int v) => _timeout = v
+            );
+            options.Add(
                 "region=",
                 () => "(Optional) The region to store the package in (beta)",
                 v => _region = v
@@ -62,7 +68,7 @@ namespace Feedz.Console.Commands
                 return;
 
             var client = ClientFactory.Create(_pat, _region);
-
+            
             foreach (var f in _files)
             {
                 await PushFile(f, client);
@@ -92,7 +98,7 @@ namespace Feedz.Console.Commands
 
             if (_files.Count == 0)
             {
-                Log.Error("Please specify a file to push to using --file=YourOrganisation");
+                Log.Error("Please specify a file to push to using --file=My.Package.1.0.0.zip");
                 isValid = false;
             }
 
@@ -112,6 +118,7 @@ namespace Feedz.Console.Commands
                 var repo = client.ScopeToRepository(_org, _repo);
                 Log.Information("Pushing {file:l} to {uri:l}", file, repo.Packages.FeedUri.AbsoluteUri);
 
+                client.FeedTimeout = TimeSpan.FromSeconds(_timeout);
                 using (var fs = File.OpenRead(file))
                     await repo.Packages.Upload(fs, Path.GetFileName(file), _force);
                 

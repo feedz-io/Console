@@ -20,6 +20,7 @@ namespace Feedz.Console.Commands
         private string _id;
         private string _similarPackagePath;
         private string _version;
+        private int _timeout = 1800;
 
         protected override void PopulateOptions(OptionSet options)
         {
@@ -54,6 +55,11 @@ namespace Feedz.Console.Commands
                 v => _similarPackagePath = v
             );
             options.Add(
+                "timeout",
+                () => "(Optional) Amount of time wait for the download to complete in seconds (Default 1800)",
+                (int v) => _timeout = v
+            );
+            options.Add(
                 "region=",
                 () => "(Optional) The region to store the package in (beta)",
                 v => _region = v
@@ -82,7 +88,8 @@ namespace Feedz.Console.Commands
                 Log.Error("The file {filename:l} already exists locally", packageFilename);
                 return;
             }
-
+            
+            client.FeedTimeout = TimeSpan.FromSeconds(_timeout);
             var result = await repo
                 .Packages
                 .Download(
