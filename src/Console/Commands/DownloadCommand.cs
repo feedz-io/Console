@@ -55,7 +55,7 @@ namespace Feedz.Console.Commands
                 v => _similarPackagePath = v
             );
             options.Add(
-                "timeout",
+                "timeout=",
                 () => "(Optional) Amount of time wait for the download to complete in seconds (Default 1800)",
                 (int v) => _timeout = v
             );
