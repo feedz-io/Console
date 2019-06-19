@@ -16,6 +16,6 @@
     <PackageReference Include="Serilog.Exceptions" Version="4.1.0" />
   </ItemGroup>
   <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' ">
-    <RuntimeIdentifiers>linux-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>linux-x64;osx-x64</RuntimeIdentifiers>
   </PropertyGroup>
 </Project>

@@ -101,6 +101,15 @@ Task("Publish")
             Runtime = "linux-x64",
             ArgumentCustomization = args => args.Append($"/p:Version={nugetVersion}")
         });
+
+        DotNetCorePublish("./src/Console", new DotNetCorePublishSettings
+        {
+            Configuration = configuration,
+            OutputDirectory = $"{publishDir}\\osx",
+            Framework = "netcoreapp2.1",
+            Runtime = "osx-x64",
+            ArgumentCustomization = args => args.Append($"/p:Version={nugetVersion}")
+        });
     });
     
 Task("MergeExe")
@@ -129,6 +138,7 @@ Task("Zip")
 
         Zip(System.IO.Path.GetFullPath($"{publishDir}/netfx-merged"), $"{artifactsDir}/Feedz.Console.{nugetVersion}.zip");
         TarGzip($"{publishDir}/linux",  $"{artifactsDir}/Feedz.Console.linux.{nugetVersion}");
+        TarGzip($"{publishDir}/osx",  $"{artifactsDir}/Feedz.Console.osx.{nugetVersion}");
     });
 
 Task("Push")

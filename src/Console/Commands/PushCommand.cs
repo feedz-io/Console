@@ -49,7 +49,7 @@ namespace Feedz.Console.Commands
                 v => _force = v != null
             );
             options.Add(
-                "timeout",
+                "timeout=",
                 () => "(Optional) Amount of time wait for the push to complete in seconds (Default 1800)",
                 (int v) => _timeout = v
             );
