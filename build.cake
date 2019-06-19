@@ -150,6 +150,7 @@ Task("Push")
 
         await repo.Packages.Upload($"{artifactsDir}/Feedz.Console.{nugetVersion}.zip");
         await repo.Packages.Upload($"{artifactsDir}/Feedz.Console.linux.{nugetVersion}.tgz");
+        await repo.Packages.Upload($"{artifactsDir}/Feedz.Console.osx.{nugetVersion}.tgz");
      });
 
 Task("Default")
