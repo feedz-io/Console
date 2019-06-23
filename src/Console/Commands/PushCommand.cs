@@ -64,11 +64,12 @@ namespace Feedz.Console.Commands
         {
             _files = _files.Where(f => !string.IsNullOrWhiteSpace(f)).ToList();
 
-            if (!Validate()) 
+            if (!Validate())
                 return;
 
             var client = ClientFactory.Create(_pat, _region);
-            
+            client.FeedTimeout = TimeSpan.FromSeconds(_timeout);
+
             foreach (var f in _files)
             {
                 await PushFile(f, client);
@@ -118,11 +119,14 @@ namespace Feedz.Console.Commands
                 var repo = client.ScopeToRepository(_org, _repo);
                 Log.Information("Pushing {file:l} to {uri:l}", file, repo.Packages.FeedUri.AbsoluteUri);
 
-                client.FeedTimeout = TimeSpan.FromSeconds(_timeout);
                 using (var fs = File.OpenRead(file))
                     await repo.Packages.Upload(fs, Path.GetFileName(file), _force);
-                
+
                 Log.Information("Pushed {file:l}", file);
+            }
+            catch (TaskCanceledException)
+            {
+                Log.Information("The push time limit was exceeded, specify the -timeout parameter to extend the timeout");
             }
             catch (Exception ex)
             {

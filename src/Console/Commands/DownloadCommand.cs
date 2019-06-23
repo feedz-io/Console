@@ -71,39 +71,46 @@ namespace Feedz.Console.Commands
             if (!Validate())
                 return;
 
-            var client = ClientFactory.Create(_pat, _region);
-
-            var repo = client.ScopeToRepository(_org, _repo);
-
-            var package = string.IsNullOrEmpty(_version)
-                ? await repo.Packages.GetLatest(_id)
-                : await repo.Packages.Get(_id, _version);
-
-            var packageFilename = $"{package.PackageId}.{package.Version}{package.Extension}";
-            var destination = Path.GetFullPath(packageFilename);
-            Log.Information("Downloading {filename:l} to {destination:l}", packageFilename, Path.GetDirectoryName(destination));
-
-            if (File.Exists(destination))
+            try
             {
-                Log.Error("The file {filename:l} already exists locally", packageFilename);
-                return;
-            }
-            
-            client.FeedTimeout = TimeSpan.FromSeconds(_timeout);
-            var result = await repo
-                .Packages
-                .Download(
-                    package,
-                    _similarPackagePath ?? Environment.CurrentDirectory
-                );
+                var client = ClientFactory.Create(_pat, _region);
+                client.FeedTimeout = TimeSpan.FromSeconds(_timeout);
 
-            using (result)
-            using (var fs = File.OpenWrite(destination))
-            {
-                result.CopyTo(fs);
+                var repo = client.ScopeToRepository(_org, _repo);
+
+                var package = string.IsNullOrEmpty(_version)
+                    ? await repo.Packages.GetLatest(_id)
+                    : await repo.Packages.Get(_id, _version);
+
+                var packageFilename = $"{package.PackageId}.{package.Version}{package.Extension}";
+                var destination = Path.GetFullPath(packageFilename);
+                Log.Information("Downloading {filename:l} to {destination:l}", packageFilename, Path.GetDirectoryName(destination));
+
+                if (File.Exists(destination))
+                {
+                    Log.Error("The file {filename:l} already exists locally", packageFilename);
+                    return;
+                }
+
+                var result = await repo
+                    .Packages
+                    .Download(
+                        package,
+                        _similarPackagePath ?? Environment.CurrentDirectory
+                    );
+
+                using (result)
+                using (var fs = File.OpenWrite(destination))
+                {
+                    result.CopyTo(fs);
+                }
+
+                Log.Information("Download completed");
             }
-            
-            Log.Information("Download completed");
+            catch (TaskCanceledException)
+            {
+                Log.Information("The download time limit was exceeded, specify the -timeout parameter to extend the timeout");
+            }
         }
 
         private bool Validate()
