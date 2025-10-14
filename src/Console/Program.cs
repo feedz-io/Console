@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -8,7 +9,9 @@ using Serilog.Exceptions;
 
 namespace Feedz.Console
 {
-    class Program
+    public record CommandInfo(string Name, string Description, ICommand Instance);
+
+    public class Program
     {
         static async Task Main(string[] args)
         {
@@ -18,26 +21,27 @@ namespace Feedz.Console
                 .MinimumLevel.Information()
                 .CreateLogger();
 
-            var commands =
-                from t in typeof(Program).Assembly.GetTypes()
+            var commands = (from t in typeof(Program).Assembly.GetTypes()
                 where typeof(ICommand).IsAssignableFrom(t) && t.IsClass && !t.IsAbstract
                 let a = (CommandAttribute) t.GetCustomAttribute(typeof(CommandAttribute))
-                select new
-                {
+                select new CommandInfo(
                     a.Name,
                     a.Description,
-                    Type = t
-                };
+                    (ICommand)Activator.CreateInstance(t)
+                )).ToList();
 
+            await Execute(args, commands);
+        }
 
+        public static async Task Execute(string[] args, List<CommandInfo> commands)
+        {
             var command = args.Length == 0
                 ? null
                 : commands.FirstOrDefault(c => c.Name.Equals(args[0], StringComparison.OrdinalIgnoreCase));
 
             if (command != null)
             {
-                var impl = (ICommand) Activator.CreateInstance(command.Type);
-                await impl.Execute(args.Skip(1).ToArray());
+                await command.Instance.Execute(args.Skip(1).ToArray());
                 return;
             }
 

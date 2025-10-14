@@ -45,12 +45,12 @@ namespace Feedz.Console.Commands
                 v => _id = v
             );
             options.Add(
-                "version",
+                "version=",
                 () => "(Optional) The version to download. If not specified, the latest release version will be downloaded.",
                 v => _version = v
             );
             options.Add(
-                "similarPackagePath",
+                "similarPackagePath=",
                 () => "(Optional) Delta compression uses a local package that is similar to the package to be downloaded to reduce the transfer size. If this option is a file, it will be used as the basis for comparison. If this is a directory, it will be searched for a file to use. Of omitted the current directory is used.",
                 v => _similarPackagePath = v
             );
