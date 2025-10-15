@@ -14,20 +14,20 @@ namespace Feedz.Console.Tests.Plumbing
     /// </summary>
     public class MockHttpMessageHandler : HttpMessageHandler
     {
-        private readonly List<(Func<HttpRequestMessage, bool> predicate, Func<HttpResponseMessage> responseFactory)> _responses = new();
+        private readonly List<(Func<HttpRequestMessage, bool> predicate, Func<HttpResponseMessage> responseFactory)> responses = new();
 
         public int RequestCount { get; private set; }
 
         public void AddResponse(Func<HttpRequestMessage, bool> predicate, Func<HttpResponseMessage> responseFactory)
         {
-            _responses.Add((predicate, responseFactory));
+            responses.Add((predicate, responseFactory));
         }
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             RequestCount++;
 
-            foreach (var (predicate, responseFactory) in _responses)
+            foreach (var (predicate, responseFactory) in responses)
             {
                 if (predicate(request))
                     return Task.FromResult(responseFactory());

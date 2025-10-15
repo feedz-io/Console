@@ -9,7 +9,7 @@ namespace Feedz.Console.Tests.Plumbing
     /// <summary>
     /// Helper methods for creating common mock HTTP responses.
     /// </summary>
-    public static class MockResponseHelper
+    public static class MockHttpMessageHandlerExtensions
     {
         /// <summary>
         /// Adds a mock response for the delta signature endpoint that returns 404 to force full upload.

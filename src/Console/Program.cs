@@ -1,60 +1,40 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
-using Feedz.Console.Commands;
+using System.CommandLine;
+using System.IO.Abstractions;
+using Feedz.Console.Commands.Download;
+using Feedz.Console.Commands.List;
+using Feedz.Console.Commands.Push;
+using Feedz.Console.Plumbing;
 using Serilog;
-using Serilog.Exceptions;
+using Serilog.Events;
 
-namespace Feedz.Console
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .CreateLogger();
+
+try
 {
-    public record CommandInfo(string Name, string Description, ICommand Instance);
+    var clientFactory = new ClientFactory();
+    var fileSystem = new FileSystem();
 
-    public class Program
+    var rootCommand = new RootCommand("Feedz.io package management CLI")
     {
-        static async Task Main(string[] args)
-        {
-            Log.Logger = new LoggerConfiguration()
-                .Enrich.WithExceptionDetails()
-                .WriteTo.Console(outputTemplate: "{Message:lk}{NewLine}{Exception}")
-                .MinimumLevel.Information()
-                .CreateLogger();
+        new PushCommand(new PushHandler(clientFactory, fileSystem)),
+        new DownloadCommand(new DownloadHandler(clientFactory, fileSystem)),
+        new ListCommand(new ListHandler(clientFactory))
+    };
 
-            var commands = (from t in typeof(Program).Assembly.GetTypes()
-                where typeof(ICommand).IsAssignableFrom(t) && t.IsClass && !t.IsAbstract
-                let a = (CommandAttribute) t.GetCustomAttribute(typeof(CommandAttribute))
-                select new CommandInfo(
-                    a.Name,
-                    a.Description,
-                    (ICommand)Activator.CreateInstance(t)
-                )).ToList();
-
-            await Execute(args, commands);
-        }
-
-        public static async Task Execute(string[] args, List<CommandInfo> commands)
-        {
-            var command = args.Length == 0
-                ? null
-                : commands.FirstOrDefault(c => c.Name.Equals(args[0], StringComparison.OrdinalIgnoreCase));
-
-            if (command != null)
-            {
-                await command.Instance.Execute(args.Skip(1).ToArray());
-                return;
-            }
-
-            Log.Information($"Usage: Feedz <command> [options]");
-            Log.Information("");
-            Log.Information("Available commands are:");
-            foreach (var cmd in commands.OrderBy(a => a.Name))
-            {
-                Log.Information("  " + cmd.Name.ToLower());
-                Log.Information("    " + cmd.Description);
-            }
-
-            System.Console.WriteLine("");
-        }
-    }
+    var parseResult = rootCommand.Parse(args);
+    return await parseResult.InvokeAsync();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+    return 1;
+}
+finally
+{
+    await Log.CloseAndFlushAsync();
 }

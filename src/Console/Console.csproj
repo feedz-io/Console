@@ -1,11 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <RootNamespace>Feedz.Console</RootNamespace>
     <AssemblyName>Feedz</AssemblyName>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
     <RuntimeIdentifiers>win-x64;linux-x64;osx-x64</RuntimeIdentifiers>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 
     <!-- Single binary configuration -->
     <PublishSingleFile>true</PublishSingleFile>
@@ -13,11 +17,12 @@
     <PublishTrimmed>true</PublishTrimmed>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
   </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Feedz.Client" Version="3.0.7" />
-    <PackageReference Include="Feedz.Util" Version="0.3.0" />
-    <PackageReference Include="NDesk.Options.Patched" Version="0.3.1" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageReference Include="Serilog.Exceptions" Version="8.4.0" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-rc.2.25502.107" />
+    <PackageReference Include="System.IO.Abstractions" Version="22.0.16" />
   </ItemGroup>
 </Project>
