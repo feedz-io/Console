@@ -53,15 +53,27 @@ namespace Feedz.Console.Commands
             if (!Validate())
                 return;
 
-            var client = ClientFactory.Create(_pat, _region);
-            var repo = client.ScopeToRepository(_org, _repo);
+            try
+            {
+                var client = CreateClient(_pat, _region);
+                var repo = client.ScopeToRepository(_org, _repo);
 
-            var packages = string.IsNullOrEmpty(_id)
-                ? await repo.Packages.All()
-                : await repo.Packages.ListByPackageId(_id);
+                var packages = string.IsNullOrEmpty(_id)
+                    ? await repo.PackageFeed.All()
+                    : await repo.PackageFeed.ListByPackageId(_id);
 
-            foreach (var package in packages)
-                Log.Information("{id:l}   {version:l}   {extension:l}", package.PackageId, package.Version, package.Extension);
+                foreach (var package in packages)
+                    Log.Information("{id:l}   {version:l}   {extension:l}", package.PackageId, package.Version, package.Extension);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Error listing packages: {message}", ex.Message);
+            }
+        }
+
+        protected virtual FeedzClient CreateClient(string pat, string region)
+        {
+            return ClientFactory.Create(pat, region);
         }
 
         private bool Validate()

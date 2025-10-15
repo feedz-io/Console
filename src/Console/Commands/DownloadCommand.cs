@@ -73,14 +73,14 @@ namespace Feedz.Console.Commands
 
             try
             {
-                var client = ClientFactory.Create(_pat, _region);
+                var client = CreateClient(_pat, _region);
                 client.FeedTimeout = TimeSpan.FromSeconds(_timeout);
 
                 var repo = client.ScopeToRepository(_org, _repo);
 
                 var package = string.IsNullOrEmpty(_version)
-                    ? await repo.Packages.GetLatest(_id)
-                    : await repo.Packages.Get(_id, _version);
+                    ? await repo.PackageFeed.GetLatest(_id)
+                    : await repo.PackageFeed.Get(_id, _version);
 
                 var packageFilename = $"{package.PackageId}.{package.Version}{package.Extension}";
                 var destination = Path.GetFullPath(packageFilename);
@@ -93,7 +93,7 @@ namespace Feedz.Console.Commands
                 }
 
                 var result = await repo
-                    .Packages
+                    .PackageFeed
                     .Download(
                         package,
                         _similarPackagePath ?? Environment.CurrentDirectory
@@ -111,6 +111,15 @@ namespace Feedz.Console.Commands
             {
                 Log.Information("The download time limit was exceeded, specify the -timeout parameter to extend the timeout");
             }
+            catch (Exception ex)
+            {
+                Log.Error("Error downloading package: {message}", ex.Message);
+            }
+        }
+
+        protected virtual FeedzClient CreateClient(string pat, string region)
+        {
+            return ClientFactory.Create(pat, region);
         }
 
         private bool Validate()

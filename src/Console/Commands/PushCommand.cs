@@ -67,13 +67,18 @@ namespace Feedz.Console.Commands
             if (!Validate())
                 return;
 
-            var client = ClientFactory.Create(_pat, _region);
+            var client = CreateClient(_pat, _region);
             client.FeedTimeout = TimeSpan.FromSeconds(_timeout);
 
             foreach (var f in _files)
             {
                 await PushFile(f, client);
             }
+        }
+
+        protected virtual FeedzClient CreateClient(string pat, string region)
+        {
+            return ClientFactory.Create(pat, region);
         }
 
         private bool Validate()
@@ -117,10 +122,10 @@ namespace Feedz.Console.Commands
             try
             {
                 var repo = client.ScopeToRepository(_org, _repo);
-                Log.Information("Pushing {file:l} to {uri:l}", file, repo.Packages.FeedUri.AbsoluteUri);
+                Log.Information("Pushing {file:l} to {uri:l}", file, repo.PackageFeed.FeedUri.AbsoluteUri);
 
                 using (var fs = File.OpenRead(file))
-                    await repo.Packages.Upload(fs, Path.GetFileName(file), _force);
+                    await repo.PackageFeed.Upload(fs, Path.GetFileName(file), _force);
 
                 Log.Information("Pushed {file:l}", file);
             }

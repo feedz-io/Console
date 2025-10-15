@@ -10,7 +10,7 @@ namespace Feedz.Console.Tests.Commands
 {
     public class CommandBaseTests
     {
-        private StringWriter _output;
+        private StringWriter _output = null!;
 
         [SetUp]
         public void Setup()
@@ -87,7 +87,7 @@ namespace Feedz.Console.Tests.Commands
         private class TestCommand : CommandBase
         {
             public bool ExecuteCalled { get; private set; }
-            public string TestValue { get; private set; }
+            public string TestValue { get; private set; } = null!;
 
             protected override void PopulateOptions(OptionSet options)
             {
