@@ -1,0 +1,104 @@
+name: Build
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for GitVersion
+
+      - name: Setup .NET 8.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v0
+        with:
+          versionSpec: '5.x'
+
+      - name: Run GitVersion
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v0
+
+      - name: Display Version
+        run: |
+          echo "SemVer: $env:GitVersion_SemVer"
+          echo "InformationalVersion: $env:GitVersion_InformationalVersion"
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build -c Release --no-restore /p:Version=$env:GitVersion_SemVer /p:InformationalVersion=$env:GitVersion_InformationalVersion
+
+      - name: Test
+        run: dotnet test --no-build -c Release --logger trx --logger "console;verbosity=detailed" --results-directory ./artifacts/TestResults
+
+      - name: Publish Windows x64
+        run: dotnet publish src/Console/Console.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:Version=$env:GitVersion_SemVer -o ./artifacts/publish/win-x64
+
+      - name: Publish Linux x64
+        run: dotnet publish src/Console/Console.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:Version=$env:GitVersion_SemVer -o ./artifacts/publish/linux-x64
+
+      - name: Publish macOS x64
+        run: dotnet publish src/Console/Console.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=true -p:Version=$env:GitVersion_SemVer -o ./artifacts/publish/osx-x64
+
+      - name: Publish macOS ARM64
+        run: dotnet publish src/Console/Console.csproj -c Release -r osx-arm64 --self-contained true -p:PublishSingleFile=true -p:Version=$env:GitVersion_SemVer -o ./artifacts/publish/osx-arm64
+
+      - name: Create Archives
+        shell: pwsh
+        run: |
+          $version = $env:GitVersion_SemVer
+
+          # Create Windows ZIP
+          Compress-Archive -Path ./artifacts/publish/win-x64/* -DestinationPath ./artifacts/Feedz.Console.$version.win-x64.zip
+
+          # Create Linux tar.gz
+          tar -czf ./artifacts/Feedz.Console.$version.linux-x64.tar.gz -C ./artifacts/publish/linux-x64 .
+
+          # Create macOS x64 tar.gz
+          tar -czf ./artifacts/Feedz.Console.$version.osx-x64.tar.gz -C ./artifacts/publish/osx-x64 .
+
+          # Create macOS ARM64 tar.gz
+          tar -czf ./artifacts/Feedz.Console.$version.osx-arm64.tar.gz -C ./artifacts/publish/osx-arm64 .
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: test-results
+          path: artifacts/TestResults/*.trx
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-packages
+          path: |
+            artifacts/*.zip
+            artifacts/*.tar.gz
+
+      - name: Create GitHub Draft Release
+        if: github.ref_name == 'main'
+        shell: pwsh
+        working-directory: artifacts
+        run: |
+          $version = $env:GitVersion_SemVer
+          gh release create --draft --target ${{ github.ref_name }} --title $version $version (Get-Item *.zip, *.tar.gz)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
