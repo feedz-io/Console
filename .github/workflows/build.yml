@@ -70,16 +70,16 @@ jobs:
           $version = $env:GitVersion_SemVer
 
           # Create Windows ZIP
-          Compress-Archive -Path ./artifacts/publish/win-x64/* -DestinationPath ./artifacts/Feedz.Console.$version.win-x64.zip
+          Get-ChildItem -Path ./artifacts/publish/win-x64 -Exclude *.pdb | Compress-Archive -DestinationPath ./artifacts/Feedz.Console.$version.win-x64.zip
 
           # Create Linux tar.gz
-          tar -czf ./artifacts/Feedz.Console.$version.linux-x64.tar.gz -C ./artifacts/publish/linux-x64 .
+          tar -czf ./artifacts/Feedz.Console.$version.linux-x64.tar.gz -C ./artifacts/publish/linux-x64 --exclude='*.pdb' .
 
           # Create macOS x64 tar.gz
-          tar -czf ./artifacts/Feedz.Console.$version.osx-x64.tar.gz -C ./artifacts/publish/osx-x64 .
+          tar -czf ./artifacts/Feedz.Console.$version.osx-x64.tar.gz -C ./artifacts/publish/osx-x64 --exclude='*.pdb' .
 
           # Create macOS ARM64 tar.gz
-          tar -czf ./artifacts/Feedz.Console.$version.osx-arm64.tar.gz -C ./artifacts/publish/osx-arm64 .
+          tar -czf ./artifacts/Feedz.Console.$version.osx-arm64.tar.gz -C ./artifacts/publish/osx-arm64 --exclude='*.pdb' .
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
@@ -97,7 +97,6 @@ jobs:
             artifacts/*.tar.gz
 
       - name: Create GitHub Draft Release
-        if: github.ref_name == 'main'
         shell: pwsh
         working-directory: artifacts
         run: |
