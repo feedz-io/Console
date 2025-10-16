@@ -97,6 +97,7 @@ jobs:
             artifacts/*.tar.gz
 
       - name: Create GitHub Draft Release
+        if: github.ref_name == 'main'
         shell: pwsh
         working-directory: artifacts
         run: |
