@@ -1,0 +1,29 @@
+name: Test Report
+run-name: Generate Test Report for workflow ${{ github.event.workflow_run.name }} run ${{ github.event.workflow_run.run_number }} branch ${{ github.event.workflow_run.head_branch }}
+
+# This workflow generates test reports from uploaded test results
+# It runs after the Build workflow completes
+
+on:
+  workflow_run:
+    workflows: [ "Build" ]
+    types:
+      - completed
+
+permissions:
+  contents: read
+  actions: read
+  checks: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        with:
+          artifact: test-results
+          name: Unit Tests
+          path: "*.trx"
+          reporter: dotnet-trx
+          fail-on-error: false
