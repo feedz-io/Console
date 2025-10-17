@@ -36,7 +36,7 @@ public class PushHandler(IClientFactory clientFactory, IFileSystem fileSystem) :
             Log.Information("Pushing {file:l} to {uri:l}", file.FullName, repo.PackageFeed.FeedUri.AbsoluteUri);
 
             using (var fs = fileSystem.File.OpenRead(file.FullName))
-                await repo.PackageFeed.Upload(fs, file.Name, options.Force);
+                await repo.PackageFeed.Upload(fs, file.Name, options.Force, options.UseDeltaCompression);
 
             Log.Information("Pushed {file:l}", file.FullName);
             return true;

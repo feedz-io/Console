@@ -8,4 +8,5 @@ public record PushOptions
     public required IReadOnlyList<FileInfo> Files { get; init; }
     public bool Force { get; init; }
     public int Timeout { get; init; } = 1800;
+    public bool UseDeltaCompression { get; init; } = true;
 }
