@@ -13,7 +13,7 @@ public class ClientFactory : IClientFactory
 {
     public FeedzClient Create(string? pat)
     {
-        var client =  FeedzClient.Create(pat, "https://localhost:5000", "https://localhost:7000");
+        var client =  FeedzClient.Create(pat);
         client.Log = new DelegateFeedzLogger(Log.Information, Log.Error);
         return client;
     }
