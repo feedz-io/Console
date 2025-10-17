@@ -1,6 +1,4 @@
 using Feedz.Client;
-using Feedz.Client.Logging;
-using Serilog;
 
 namespace Feedz.Console.Plumbing;
 
@@ -13,8 +11,6 @@ public class ClientFactory : IClientFactory
 {
     public FeedzClient Create(string? pat)
     {
-        var client =  FeedzClient.Create(pat, "https://localhost:5000", "https://localhost:7000");
-        client.Log = new DelegateFeedzLogger(Log.Information, Log.Error);
-        return client;
+        return FeedzClient.Create(pat);
     }
 }
