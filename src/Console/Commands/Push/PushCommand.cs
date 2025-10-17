@@ -28,7 +28,7 @@ public class PushCommand : Command
         };
 
         var filesOption = new Option<FileInfo[]>(
-            "--files", "--file", "-f")
+            "--file", "--file", "-f", "--package")
         {
             Description = "Package file(s) to push. Specify multiple times to push multiple packages",
             Required = true,
