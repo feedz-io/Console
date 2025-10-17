@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     env:
       DOTNET_NOLOGO: true
@@ -37,15 +37,15 @@ jobs:
 
       - name: Display Version
         run: |
-          echo "SemVer: $env:GitVersion_SemVer"
-          echo "InformationalVersion: $env:GitVersion_InformationalVersion"
+          echo "SemVer: $GitVersion_SemVer"
+          echo "InformationalVersion: $GitVersion_InformationalVersion"
 
       - name: Restore
         run: dotnet restore
         working-directory: src
 
       - name: Build
-        run: dotnet build -c Release --no-restore /p:Version=$env:GitVersion_SemVer /p:InformationalVersion=$env:GitVersion_InformationalVersion
+        run: dotnet build -c Release --no-restore /p:Version=$GitVersion_SemVer /p:InformationalVersion=$GitVersion_InformationalVersion
         working-directory: src
 
       - name: Test
@@ -53,24 +53,24 @@ jobs:
         working-directory: src
 
       - name: Publish Windows x64
-        run: dotnet publish src/Console/Console.csproj -c Release -r win-x64 -p:Version=$env:GitVersion_SemVer -o ./artifacts/publish/win-x64
+        run: dotnet publish src/Console/Console.csproj -c Release -r win-x64 -p:Version=$GitVersion_SemVer -o ./artifacts/publish/win-x64
 
       - name: Publish Linux x64
-        run: dotnet publish src/Console/Console.csproj -c Release -r linux-x64 -p:Version=$env:GitVersion_SemVer -o ./artifacts/publish/linux-x64
+        run: dotnet publish src/Console/Console.csproj -c Release -r linux-x64 -p:Version=$GitVersion_SemVer -o ./artifacts/publish/linux-x64
 
       - name: Publish macOS x64
-        run: dotnet publish src/Console/Console.csproj -c Release -r osx-x64 -p:Version=$env:GitVersion_SemVer -o ./artifacts/publish/osx-x64
+        run: dotnet publish src/Console/Console.csproj -c Release -r osx-x64 -p:Version=$GitVersion_SemVer -o ./artifacts/publish/osx-x64
 
       - name: Publish macOS ARM64
-        run: dotnet publish src/Console/Console.csproj -c Release -r osx-arm64 -p:Version=$env:GitVersion_SemVer -o ./artifacts/publish/osx-arm64
+        run: dotnet publish src/Console/Console.csproj -c Release -r osx-arm64 -p:Version=$GitVersion_SemVer -o ./artifacts/publish/osx-arm64
 
       - name: Create Archives
-        shell: pwsh
+        shell: bash
         run: |
-          $version = $env:GitVersion_SemVer
+          version=$GitVersion_SemVer
 
           # Create Windows ZIP
-          Get-ChildItem -Path ./artifacts/publish/win-x64 -Exclude *.pdb | Compress-Archive -DestinationPath ./artifacts/Feedz.Console.$version.win-x64.zip
+          zip -rj ./artifacts/Feedz.Console.$version.win-x64.zip ./artifacts/publish/win-x64 -x '*.pdb'
 
           # Create Linux tar.gz
           tar -czf ./artifacts/Feedz.Console.$version.linux-x64.tar.gz -C ./artifacts/publish/linux-x64 --exclude='*.pdb' .
@@ -98,10 +98,10 @@ jobs:
 
       - name: Create GitHub Draft Release
         if: github.ref_name == 'main'
-        shell: pwsh
+        shell: bash
         working-directory: artifacts
         run: |
-          $version = $env:GitVersion_SemVer
-          gh release create --draft --target ${{ github.ref_name }} --title $version $version (Get-Item *.zip, *.tar.gz)
+          version=$GitVersion_SemVer
+          gh release create --draft --target ${{ github.ref_name }} --title $version $version *.zip *.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
